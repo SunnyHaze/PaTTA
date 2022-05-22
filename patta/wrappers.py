@@ -48,6 +48,41 @@ class SegmentationTTAWrapper(nn.Layer):
 
         return result
 
+class CD_TTAWrapper(nn.layer):
+    def __init__(
+        self,
+        model: nn.Layer,
+        transforms: Compose,
+        merge_mode: str = "mean",
+        output_mask_key: Optional[str] = None,
+    ):
+        super().__init__()
+        self.model = model
+        self.transforms = transforms
+        self.merge_mode = merge_mode
+        self.output_key = output_mask_key
+
+    def forward(
+        self, image1, image2,  *args
+    ):
+        merger = Merger(type=self.merge_mode, n=len(self.transforms))
+
+        for transformer in self.transforms:
+            augmented_image1 = transformer.augment_image(image1)
+            augmented_image2 = transformer.augment_image(image2)
+            augmented_output = self.model(augmented_image1, augmented_image2 , *args)[0]
+            if self.output_key is not None:
+                augmented_output = augmented_output[self.output_key]
+            deaugmented_output = transformer.deaugment_mask(augmented_output)
+            merger.append(deaugmented_output)
+
+        result = merger.result
+        if self.output_key is not None:
+            result = {self.output_key: result}
+
+        return result
+    
+
 
 class ClassificationTTAWrapper(nn.Layer):
     """Wrap Paddle nn.Layer (classification model) with test time augmentation transforms
