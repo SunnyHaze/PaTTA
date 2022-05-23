@@ -48,7 +48,7 @@ class SegmentationTTAWrapper(nn.Layer):
 
         return result
 
-class CD_TTAWrapper(nn.layer):
+class CD_TTAWrapper(nn.Layer):
     def __init__(
         self,
         model: nn.Layer,
